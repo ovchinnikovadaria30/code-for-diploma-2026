@@ -1,0 +1,796 @@
+#загрузим пакеты
+install.packages("DescTools")
+install.packages("fixest")
+install.packages("ggstatsplot")
+install.packages("dplyr")
+install.packages("ggridges")
+install.packages("fixest")
+install.packages("modelsummary")
+install.packages("gghighlight")
+install.packages("nnet")
+install.packages("car")
+install.packages("margins")
+install.packages("circlize")
+install.packages("ggradar")
+install.packages("devtools")
+install.packages("corrplot")
+install.packages("ggstatsplot")
+install.packages("marginaleffects")
+install.packages("cvms")
+install.packages("mlbench")
+library(caret)
+library(ggplot2)
+library(mlbench)
+library(tibble)
+library(cvms)
+library(caret)
+library(dplyr)
+library(cvms)
+library(caret)
+library(marginaleffects)
+library(GGally)
+library(ggplot2)
+library(fairml)
+library(ggstatsplot)
+library(corrplot)
+library(circlize)
+library(svglite)
+library(margins)
+library(nnet)
+library(fixest)
+library(plm)
+library(dplyr)
+library(stargazer)
+library(DescTools)
+library(readxl)
+library(tidyr)
+library(zoo)
+library(modelsummary)
+library(lmtest)
+library(fixest)
+library(flextable)
+library(officer)
+library(car)
+library(dplyr)
+library(ggplot2)
+library(ggridges)
+library(tidyr)
+library(dplyr)
+library(gghighlight)
+library(pROC)
+library(ggplot2)
+
+#### Панельные данные ####
+#загрузим данные
+data <- read_excel("/Users/daryaovchinnikova/Desktop/Данные_обработка 1.0.2.xlsx", sheet = "Sheet3")
+names(data)
+cols_to_remove <- c("Наименование", "Дивиденд", "peer_sum", "payout_ratio", "pabs", "inc_ratio", "dec_ratio", "Assets", "Psize", "PTangibility", "PSales_growth", "PREBE", "PROA", "PLeverage","PLeverage1" ,"ПРОВЕРКА REBE")
+data <- data %>% dplyr::select(-dplyr::all_of(cols_to_remove))
+names(data)
+
+#### Очистим от выбросов ####
+#чистим REBE #далее уберем где отрицательный капитал
+data <- data %>% filter(!(company == "APTK" & year == 2014))%>% filter(!(company == "AFLT" & year == 2019))%>%
+  filter(!(company == "RNFT" & year == 2015))%>%filter(!(company == "MTLR" & year == 2024))%>%filter(!(company == "MTLR" & year == 2023))%>%filter(!(company == "MTLR" & year == 2022))%>%filter(!(company == "MTLR" & year == 2021))%>%filter(!(company == "MTLR" & year == 2020))%>%filter(!(company == "MTLR" & year == 2019))%>%filter(!(company == "MTLR" & year == 2018))%>%
+  filter(!(company == "MTLR" & year == 2018))%>%filter(!(company == "MTLR" & year == 2017))%>%filter(!(company == "MTLR" & year == 2016))%>%filter(!(company == "MTLR" & year == 2015))%>%filter(!(company == "MTLR" & year == 2014))%>%filter(!(company == "MTLR" & year == 2017))%>%filter(!(company == "PLZL" & year == 2023))%>%filter(!(company == "PLZL" & year == 2016))%>%
+  filter(!(company == "APTK" & year == 2024))%>%filter(!(company == "APTK" & year == 2023))%>%filter(!(company == "APTK" & year == 2022))%>%filter(!(company == "APTK" & year == 2021))%>%filter(!(company == "APTK" & year == 2020))%>%filter(!(company == "APTK" & year == 2019))%>%filter(!(company == "APTK" & year == 2018))%>%
+  filter(!(company == "APTK" & year == 2017))%>%filter(!(company == "APTK" & year == 2016))%>%filter(!(company == "APTK" & year == 2013))%>%filter(!(company == "AQUA" & year == 2012))%>%filter(!(company == "EUTR" & year == 2020))%>%filter(!(company == "EUTR" & year == 2019))%>%filter(!(company == "EUTR" & year == 2020))%>%filter(!(company == "FIXR" & year == 2020))%>%
+  filter(!(company == "HNFG" & year == 2021))%>%filter(!(company == "OZON" & year == 2025))%>%filter(!(company == "MTSS" & year == 2024))%>%filter(!(company == "MTSS" & year == 2022))%>%filter(!(company == "AFLT" & year == 2024))%>%filter(!(company == "AFLT" & year == 2023))%>%filter(!(company == "AFLT" & year == 2022))%>%filter(!(company == "AFLT" & year == 2021))%>%
+  filter(!(company == "AFLT" & year == 2020))%>%filter(!(company == "AFLT" & year == 2015))%>%filter(!(company == "AFLT" & year == 2014))%>%filter(!(company == "FESH" & year == 2016))%>%filter(!(company == "FESH" & year == 2015))%>%filter(!(company == "FESH" & year == 2014))%>%filter(!(company == "SMLT" & year == 2010))
+
+data <- data %>% filter(!(company == "APTK" & year == 2016)) %>% filter(!(company == "EUTR" & year == 2020)) %>%filter(!(company == "EUTR" & year == 2019)) %>%
+  filter(!(company == "APTK" & year == 2014)) %>% filter(!(company == "FESH" & year == 2014))%>% filter(!(company == "MTSS" & year == 2024))%>% filter(!(company == "MTSS" & year == 2022))%>%filter(!(company == "APTK" & year == 2015))%>%filter(!(company == "RUAL" & year == 2014))%>%
+  filter(!(company == "MTSS" & year == 2023)) %>% filter(!(company == "PIKK" & year == 2011))%>% filter(!(company == "EUTR" & year == 2021))%>% filter(!(company == "MTSS" & year == 2025))%>% filter(!(company == "MTSS" & year == 2021))%>% filter(!(company == "PIKK" & year == 2012))%>% filter(!(company == "VSEH" & year == 2024))%>%
+  filter(!(company == "MTSS" & year == 2020)) %>% filter(!(company == "X5" & year == 2021)) %>% filter(!(company == "MTSS" & year == 2019)) %>% filter(!(company == "AFLT" & year == 2025)) %>% filter(!(company == "SMLT" & year == 2023)) %>% filter(!(company == "X5" & year == 2025)) %>% filter(!(company == "FESH" & year == 2017))%>%
+  filter(!(company == "SOFL" & year == 2021)) %>% filter(!(company == "FESH" & year == 2018))  %>% filter(!(company == "TRMK" & year == 2025)) %>% filter(!(company == "SMLT" & year == 2024)) %>% filter(!(company == "ASTR" & year == 2021)) %>% filter(!(company == "MTLR" & year == 2013)) %>% filter(!(company == "VSEH" & year == 2023))%>%
+  filter(!(company == "SMLT" & year == 2022)) %>% filter(!(company == "SMLT" & year == 2019))  %>% filter(!(company == "TRMK" & year == 2021))  %>% filter(!(company == "PLZL" & year == 2018)) %>% filter(!(company == "SMLT" & year == 2017)) %>% filter(!(company == "SMLT" & year == 2021)) %>% filter(!(company == "SMLT" & year == 2016))%>%
+  filter(!(company == "TRMK" & year == 2024)) %>% filter(!(company == "MTSS" & year == 2018))
+
+data <- data %>% filter(!(year == 2010))
+
+#### Добавим переменные по компаниям - аналогам ####
+# функция для добавления новых переменных по пирам
+add_peer_mean <- function(data, var) {
+  var_name <- deparse(substitute(var))
+  peer_name <- paste0("peer_", var_name)
+  data %>% group_by(industry, year) %>% mutate(n_peer = sum(!is.na({{var}})),
+                                               sum_peer = sum({{var}}, na.rm = TRUE),
+                                               !!peer_name := ifelse(!is.na({{var}}) & n_peer > 1, (sum_peer - {{var}})/(n_peer-1),
+                                                                     NA_real_ )) %>% 
+    ungroup() %>%
+    dplyr::select(-n_peer, -sum_peer)}
+
+data <- add_peer_mean(data, sum)
+data <- add_peer_mean(data, payout)
+data <- add_peer_mean(data, abs)
+data <- add_peer_mean(data, inc)
+data <- add_peer_mean(data, dec)
+data <- add_peer_mean(data, Size)
+data <- add_peer_mean(data, Tangibility)
+data <- add_peer_mean(data, Sales_growth)
+data <- add_peer_mean(data, REBE)
+data <- add_peer_mean(data, ROA)
+data <- add_peer_mean(data, Leverage1)
+
+#### переведем в панельные данные ####
+#переведем в формат plm (укажем индекс объекта и времени)
+data1 <- pdata.frame(data, index = c("company", "year"))
+names(data1)
+
+#### выборка под графики и описательные статистики ####
+data_plot <- as.data.frame(data) 
+vars_mod2 <- c("industry", "payout", "peer_payout", "Size", "Tangibility",
+               "Sales_growth", "REBE", "ROA", "Leverage1")
+data_plot <- data_plot %>% filter(complete.cases(across(all_of(vars_mod2)))) %>% mutate(sum_log = log(sum + 1))
+
+# оставляем уникальные пары отрасль-компания
+data_plot %>% distinct(industry, company) %>% group_by(industry) %>% summarise(n_companies = n(), companies = paste(sort(company), collapse = ", "), .groups = "drop") %>% arrange(industry)
+
+#### описательные статистики ####
+#описательные статистики по всей выборке
+summary(data1)
+summary(data_plot)
+data_summary <- data_plot[ , sapply(data_plot,is.numeric)]
+stargazer(data_summary, type = "html", out = "descr_stats.html")
+
+#### графики ####
+data_plot$industry <- factor(
+  data_plot$industry,
+  levels = c(1, 2, 3, 4, 5, 7, 8),
+  labels = c("нефтегаз", "электроэнергетика", "металлы и добыча", "потребительский сектор", "ИТ", "транспорт", "недвижимость"))
+
+#### теста Геймса-Ховелла ####
+p <- ggbetweenstats(
+  data = data_plot, 
+  x = industry,
+  y = sum_log,
+  title = "Результаты теста Геймса-Ховелла", 
+  caption = "Тест используется в случае наличия 3 и больше независимых выборок", 
+  xlab = "Отрасль", 
+  ylab = "Дивидендные выплаты", 
+  p.adjust.method = "none",
+  bf.message = FALSE) +
+  theme(plot.title = element_text(size = 20),
+    plot.caption = element_text(size = 19),
+    axis.title.x = element_text(size = 17),
+    axis.title.y = element_text(size = 20),
+    axis.text.x = element_text(size = 17),
+    axis.text.y = element_text(size = 19))
+p
+ggsave("plot01.svg", plot = p, width = 20, height = 10, dpi = 400)
+
+#### график плотность распределения ####
+
+p4 <-ggplot(data = data_plot, aes(x = peer_payout, fill = as.character(industry))) +
+  geom_density(color = "black", alpha = 0.9) +
+  facet_wrap(~ as.character(industry)) +
+  gghighlight::gghighlight(
+    unhighlighted_params = list(
+      fill = "grey80",
+      alpha = 0.35,
+      colour = NA)) +
+  theme_minimal(base_size = 20) +
+  scale_fill_viridis_d(option = "F") +
+  theme(legend.position = "none") +
+  xlab("Доля аналогов, плативших дивиденды") +
+  ylab("Плотность распределения")
+p4
+ggsave("plot4.svg", plot = p4, width = 20, height = 10, limitsize = FALSE)
+
+#### круговая диаграмма ####
+
+chord_data1 <- as.data.frame(data) %>%
+  filter(complete.cases(across(all_of(vars_mod2)))) %>%
+  mutate(industry = factor(
+    industry,
+    levels = c(1, 2, 3, 4, 5, 7, 8),
+    labels = c("MOEXOG", "MOEXEU", "MOEXMM", "MOEXCN", "MOEXIT", "MOEXTN", "MOEXRE")),
+    year = as.character(year))
+chord_data <- table(chord_data1$industry, chord_data1$year)
+grid.col1 <- c("2010" = "blue1", "2011" = "blue2", "2012" = "blue3", "2013" = "blue4",
+               "2014" = "lightblue4", "2015" = "lightblue3", "2016" = "lightblue2",
+               "2017" = "lightblue1", "2018" = "slateblue", "2019" = "slateblue1",
+               "2020" = "slateblue2", "2021" = "slateblue3", "2022" = "purple",
+               "2023" = "purple1", "2024" = "purple2", "2025" = "purple3",
+               "MOEXOG" = "lightblue", "MOEXEU" = "#163B88", "MOEXMM" = "#7990A3",
+               "MOEXCN" = "#748CDB", "MOEXIT" = "#C1DFF9", "MOEXTN" = "#192D45", "MOEXRE" = "#2F4F6F")
+graphics.off()
+circos.clear()
+chordDiagram(chord_data, grid.col = grid.col1)
+
+#### график паутина ####
+data_spider <- data_plot %>%
+  filter(year %in% c("2011", "2018", "2021", "2023", "2024")) %>%
+  filter(!industry %in% c("транспорт", "недвижимость")) %>%
+  group_by(year, industry) %>%
+  summarise(mean_payout_ratio = mean(peer_payout, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = industry,
+              values_from = mean_payout_ratio,
+              values_fill = 0) %>%
+  mutate(year = as.character(year))
+data_spider
+
+p_spider <- ggradar(data_spider, axis.label.size = 2.6, grid.label.size = 5, group.line.width = 0.9, group.point.size = 3, legend.position = "bottom") +
+  scale_color_manual(values = c("#D7A3B6", "#54387F", "lightblue", "darkblue", "darkred")) +
+  theme(plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        legend.background = element_rect(fill = "white", color = NA),
+        legend.key = element_rect(fill = "white", color = NA),
+        legend.text = element_text(size = 9),
+        legend.title = element_blank(),
+        legend.margin = margin(t = -15),
+        legend.box.margin = margin(t = -20),
+        plot.margin = margin(10, 20, 0, 20))
+p_spider
+ggsave("~/Desktop/spider_plot.svg", device = svglite::svglite)
+
+#### корреляционная матрица ####
+num_data <- data %>% dplyr::select(where(is.numeric))
+cor_matrix <- cor(num_data, use = "pairwise.complete.obs", method = "pearson")
+
+corrplot(cor_matrix, method = "color",type = "upper", tl.col = "black", tl.cex = 0.8, addCoef.col = "black", number.cex = 0.6)
+
+#### корреляционная матрица - по отраслям отдельно ####
+vars_corr <- c("sum", "payout", "abs", "inc", "dec", "Size", "Tangibility", "Sales_growth", "REBE", "ROA", "Leverage1")
+
+data_corr <- data_plot %>% select(industry, all_of(vars_corr)) %>% na.omit() %>%
+  rename("Сумма див" = sum,
+         "Выплата" = payout,
+         "Темп прироста див" = abs,
+         "Увеличение див" = inc,
+         "Снижение див" = dec,
+         "Размер" = Size,
+         "ОС/ОА" = Tangibility,
+         "Рост выручки" = Sales_growth,
+         "RE/BE" = REBE,
+         "ROA" = ROA,
+         "Долговая нагрузка" = Leverage1)
+
+for (ind in unique(data_corr$industry)) {df_ind <- data_corr %>%
+  filter(industry == ind) %>%
+  select(-industry)
+  p_ind <- ggcorrmat(data = df_ind, type = "parametric", colors = c("blue", "white", "darkgreen"), matrix.type = "upper", title = ind,
+                     results.subtitle = FALSE, subtitle = NULL, caption = NULL, ggtheme = ggplot2::theme_minimal(base_size = 12)) +
+    theme(plot.title = element_text(size = 16, face = "bold"), axis.text.x = element_text(size = 9, angle = 45, hjust = 1), axis.text.y = element_text(size = 9))
+  ggsave(
+    filename = paste0("~/Desktop/corr_", ind, ".svg"),
+    plot = p_ind,
+    width = 10,
+    height = 9,
+    device = svglite::svglite)}
+
+#### корреляционная матрица - по всем отраслям сразу ####
+df_all <- data_corr %>% select(-industry)
+p_all <- ggcorrmat(data = df_all,
+                   type = "parametric",
+                   colors = c("blue", "white", "darkgreen"),
+                   matrix.type = "upper",
+                   title = "Корреляционная матрица",
+                   results.subtitle = FALSE,
+                   subtitle = NULL,
+                   caption = NULL,
+                   ggtheme = ggplot2::theme_minimal(base_size = 12)) +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.text.x = element_text(size = 9, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 9))
+p_all
+
+#### мультиколлинеарность ####
+mod_vif <- lm(payout ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = data)
+vif(mod_vif)
+
+#### график 1 - приложения ####
+
+p_pairs <- ggpairs(chord_data1,
+                   columns = c("peer_payout", "Size", "Tangibility", "REBE", "Sales_growth", "ROA", "Leverage1"),
+                   aes(color = industry, alpha = 0.5), lower = list(continuous = "smooth")) +
+  theme_classic() +scale_fill_manual(values = c("#D7A3B6", "#54387F", "lightblue", "darkblue", "darkred", "#748CDB", "#2F4F6F" )) + 
+  scale_color_manual(values = c("#D7A3B6", "#54387F", "lightblue", "darkblue", "darkred", "#748CDB", "#2F4F6F" ))
+p_pairs
+
+#### график 2 - накопленноеное распределение ####
+p_ecdf <- data_plot %>% mutate(year = as.numeric(as.character(year))) %>%
+  filter(year != 2010) %>%
+  ggplot(aes(x = sum_log, color = factor(year), group = year)) +
+  stat_ecdf(linewidth = 1.1) +
+  scale_color_manual(values = colorRampPalette(c("#163B88", "#C1DFF9"))(length(unique(data_plot$year[data_plot$year != 2010])))) +
+  theme_minimal(base_size = 13) +
+  labs(title = "Эмпирическая кумулятивная функция распределения дивидендных выплат",
+       x = "Логарифм дивидендных выплат",
+       y = "Доля компаний",
+       color = "Год") +
+  theme(plot.title = element_text(face = "bold", size = 13),
+        panel.grid.minor = element_blank(),
+        legend.position = "right")
+p_ecdf
+
+#### график 3 - ridge ####
+p_ridge_positive <- data_plot %>%
+  mutate(year = as.numeric(as.character(year))) %>%
+  filter(year != 2025, sum > 0) %>%
+  ggplot(aes(x = sum_log, y = factor(year), fill = after_stat(x))) +
+  geom_density_ridges_gradient(scale = 2.5,
+                               rel_min_height = 0.01,
+                               color = "white",
+                               linewidth = 0.3) +
+  scale_fill_viridis_c(option = "C") +
+  theme_minimal(base_size = 13) +
+  labs(title = "Распределение дивидендных выплат по годам",
+       subtitle = "Только компании, выплачивавшие дивиденды",
+       x = "Логарифмированная сумма дивидендов",
+       y = "Год") +
+  theme(plot.title = element_text(face = "bold", size = 15),
+        plot.subtitle = element_text(size = 8, color = "grey35"),
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+p_ridge_positive
+
+#### тест бокса-кокса ####
+mod_boxcox <- lm(I(sum+1) ~ peer_payout + Size + Tangibility +  Sales_growth + REBE + ROA + Leverage1, 
+                 data = data)
+#нужно ли логарифмировать зависимую переменную? 
+#тест Бокса - Кокса 
+par(mfrow = c(1,1))
+boxCox(mod_boxcox) #если линия посередине приближена к 0, то брать логарифм зависимой переменной, если к 1 - то оставляем все как есть
+summary(mod_boxcox)
+powerTransform(mod_boxcox)
+
+#### модели plm ####
+
+#сумма от средней суммы по пирам - норм в приложения
+mod1 <- plm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
+            data = data1, model = "within"#, effect = "twoways"
+)
+summary(mod1)
+mod10 <- lm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + 
+              Sales_growth + REBE + ROA + Leverage1 + company,
+            data = data1)
+summary(mod10)
+
+#сумма от доли плативших - хорошая
+mod2 <- plm(log(sum+1) ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
+            data = data1, model = "within", effect = "individual")
+summary(mod2)
+mod20 <- lm(log(sum+1) ~ peer_payout + Size + Tangibility + 
+              Sales_growth + REBE + ROA + Leverage1 + company,
+            data = data1)
+summary(mod20)
+
+#изменение от доли плативших
+mod3 <- plm(abs ~  peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
+            data = data1, model = "within")
+summary(mod3)
+mod30 <- lm(abs ~  peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company,
+            data = data1)
+summary(mod30)
+
+#изменение от изменения - норм
+mod5 <- plm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
+            data = filter(data1, abs != 1, abs < 3, abs != -1), model = "within")
+summary(mod5)
+
+mod50 <- lm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company,
+           data = filter(data1, abs != 1, abs < 3, abs != -1))
+summary(mod50)
+
+#выгрузка моделей
+library(stargazer)
+cse <- function(model) {A <- sqrt(diag(vcovHC(model,type = "HC0")))
+  return(A)}
+stargazer(mod2, mod5, type = "html", out = "mods1_plm.html")
+stargazer(mod2, mod5, type = "html", out = "mods1_plm_se.html", se = list(cse(mod3), cse(mod2), cse(mod5)))
+
+stargazer(mod1, type = "html", out = "mods11_plm.html")
+
+##### модели_logit ####
+#логит платит/нет от доли плативших
+mod_logit1 <- feglm(payout ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data, family = binomial)
+summary(mod_logit1)
+
+#предельные эффекты для серднего по выборке индивида
+maBina(mod_logit1)
+avg_slopes(mod_logit1, variables = "peer_payout")
+avg_slopes(mod_logit1,
+           variables = "peer_payout",
+           vcov = FALSE)
+
+#логит увеличивает/нет от доли увеличивших
+mod_logit2 <- glm(inc ~ peer_inc + 
+                    Size + Tangibility + Sales_growth + REBE +
+                    ROA + Leverage1, data = data,
+                  family = binomial)
+summary(mod_logit2)
+PseudoR2(mod_logit2)
+
+#логит уменьшает/нет от доли уменьшивших
+mod_logit3 <- glm(dec ~ peer_dec + 
+                    Size + Tangibility + Sales_growth + REBE +
+                    ROA + Leverage1, data = data,
+                  family = binomial)
+summary(mod_logit3)
+PseudoR2(mod_logit3)
+
+#### модель с лагами ####
+data_lag <- data %>%
+  arrange(company, year) %>%
+  group_by(company) %>%
+  mutate(peer_payout_lag1 = lag(peer_payout, 1)) %>%
+  mutate(peer_abs_lag1 = lag(peer_abs, 1)) %>%
+  ungroup()
+
+mod_logit_lag1 <- feglm(
+  payout ~ peer_payout_lag1 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company,
+  data = data_lag,
+  family = binomial)
+summary(mod_logit_lag1)
+lm_lag1 <- lm(
+  payout ~ peer_payout_lag1 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1+ company,
+  data = data_lag)
+summary(lm_lag1)
+
+#### тест на сравнение моделейс fe и без ####
+data_lr <- data %>%
+  select(inc, peer_inc, peer_dec, Size, Tangibility, Sales_growth, REBE, ROA, Leverage1, company) %>%
+  na.omit() %>%
+  group_by(company) %>%
+  filter(n_distinct(inc) > 1) %>%
+  ungroup()
+mod_logit20 <- feglm(inc ~ peer_inc + peer_dec+ 
+                      Size + Tangibility + Sales_growth + REBE +
+                      ROA + Leverage1, data = data_lr,
+                    family = binomial)
+summary(mod_logit20) # модель без фиксированных эффектов
+mod_logit30 <- feglm(inc ~ peer_inc + peer_dec+
+                      Size + Tangibility + Sales_growth + REBE +
+                      ROA + Leverage1 | company, data = data_lr,
+                    family = binomial)
+summary(mod_logit30) # модель с фиксированными эффектами
+nobs(mod_logit20)
+nobs(mod_logit30)
+lrtest(mod_logit20, mod_logit30) # - FE не нужны
+
+#### метрики для логита ####
+#mod_logit1
+##построим для этой модели confusion matrix
+
+logit_sample1 <- data %>%filter(complete.cases(payout, peer_payout, Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,company, year))
+logit_sample1$prob_hat <- predict(mod_logit1, newdata = logit_sample1, type = "response")
+logit_sample1$pred_class <- factor(ifelse(logit_sample1$prob_hat >= 0.5, 1, 0), levels = c(0, 1))
+logit_sample1$payout_f <- factor(logit_sample1$payout, levels = c(0, 1))
+table(Predicted = logit_sample1$pred_class, Actual = logit_sample1$payout_f)
+confusionMatrix(logit_sample1$pred_class, logit_sample1$payout_f)
+table(data1 %>% na.omit() %>% dplyr::select(payout))
+316/(316+171)
+
+#посчитаем метрики precision и recall
+cm <- confusionMatrix(logit_sample1$pred_class, logit_sample1$payout_f)
+tab <- cm$table
+TP <- tab["1", "1"]
+FP <- tab["1", "0"]
+FN <- tab["0", "1"]
+precision_1 <- TP / (TP + FP)
+recall_1 <- TP / (TP + FN)
+precision_1
+recall_1
+
+# Confusion matrix
+conf_mat <- confusionMatrix(
+  data = logit_sample1$pred_class,
+  reference = logit_sample1$payout_f)
+
+# Посмотреть таблицу
+conf_mat$table
+
+# График
+c1 <- as.data.frame(conf_mat$table)
+colnames(c1) <- c("Prediction", "Target", "N")
+p2 <- cvms::plot_confusion_matrix(c1,
+                                  add_counts = TRUE,
+                                  palette = "Blues",
+                                  add_normalized = FALSE)
+for (i in seq_along(p2$layers)) {
+  if (inherits(p2$layers[[i]]$geom, "GeomText")) {
+    p2$layers[[i]]$aes_params$size <- 4}}
+p2 <- p2 + theme(text = element_text(size = 15),
+                 axis.text = element_text(size = 15),
+                 axis.title = element_text(size = 15),
+                 plot.title = element_text(size = 15))
+p2
+ggsave("~/Desktop/matrix_plot.svg", device = svglite::svglite)
+logit_sample1$prob_hat <- predict(mod_logit1, newdata = logit_sample1, type = "response")
+
+# ROC
+roc_obj <- roc(response = logit_sample1$payout, predictor = logit_sample1$prob_hat)
+# AUC
+auc_val <- as.numeric(auc(roc_obj))
+# Данные для ggplot
+roc_df <- data.frame(fpr = 1 - roc_obj$specificities, tpr = roc_obj$sensitivities)
+# Красивый график
+roc_df_plot <- roc_df %>%
+  dplyr::arrange(fpr, tpr)
+p3 <- ggplot(roc_df_plot, aes(x = fpr, y = tpr)) +
+  geom_ribbon(
+    aes(ymin = 0, ymax = tpr),
+    fill = "#0099F9",
+    alpha = 0.95) +
+  geom_line(linewidth = 0.8, color = "#0099F9") +
+  coord_equal(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
+  scale_x_continuous(breaks = seq(0, 1, 0.25)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = "ROC-кривая для логит-модели",
+       subtitle = paste0("AUC = ", round(auc_val, 3)),
+       x = "False Positive Rate (1 - Specificity)",
+       y = "True Positive Rate (Sensitivity)") +
+  annotate("text", x = 0.55, y = 0.42, label = paste0("AUROC: ", round(auc_val, 4)), color = "white", size = 5) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(face = "bold", size = 14),
+        plot.subtitle = element_text(size = 12),
+        panel.grid.minor = element_blank())
+p3
+
+#### гетерогенные эффекты #### 
+#гетерогенное влияние leverage на payout
+mod_logit11 <- glm(payout ~ peer_payout*Leverage1 + 
+                     Tangibility +
+                     Sales_growth + Size + 
+                     REBE + ROA +company, 
+                   data = data, family = binomial)
+summary(mod_logit11)
+PseudoR2(mod_logit11)
+# REBE
+mod_logit12 <- feglm(payout ~ peer_payout*REBE + 
+                     Tangibility +
+                     Sales_growth + Size + 
+                     REBE + ROA + Leverage1 | year+company, 
+                   data = data, family = binomial)
+summary(mod_logit12)
+
+#size
+mod_logit13 <- feglm(payout ~ peer_payout*Size + 
+                     Tangibility +
+                     Sales_growth + 
+                     REBE + ROA + Leverage1 | company + year, 
+                   data = data, family = binomial)
+summary(mod_logit13)
+
+#гетерогенное влияние leverage на inc
+mod_logit21 <- glm(inc ~ peer_inc*Leverage1 + 
+                     Tangibility +
+                     Sales_growth + Size + 
+                     REBE + ROA, 
+                   data = data, family = binomial)
+summary(mod_logit21)
+
+# REBE
+mod_logit22 <- feglm(inc ~ peer_inc*REBE + 
+                       Tangibility +
+                       Sales_growth + Size + 
+                       REBE + ROA + Leverage1 | year+company, 
+                     data = data, family = binomial)
+summary(mod_logit22)
+
+#size
+mod_logit23 <- feglm(inc ~ peer_inc*Size + 
+                       Tangibility +
+                       Sales_growth + 
+                       REBE + ROA + Leverage1 | company + year, 
+                     data = data, family = binomial)
+summary(mod_logit23)
+
+#гетерогенное влияние leverage на dec
+mod_logit31 <- glm(dec ~ peer_dec*Leverage1 + 
+                     Tangibility +
+                     Sales_growth + Size + 
+                     REBE + ROA, 
+                   data = data, family = binomial)
+summary(mod_logit31)
+
+# REBE
+mod_logit32 <- glm(dec ~ peer_dec*REBE + 
+                       Tangibility +
+                       Sales_growth + Size + 
+                       REBE + ROA + Leverage1, 
+                     data = data, family = binomial)
+summary(mod_logit32)
+
+#size
+mod_logit33 <- feglm(dec ~ peer_dec*Size + 
+                       Tangibility +
+                       Sales_growth + 
+                       REBE + ROA + Leverage1 | company + year, 
+                     data = data, family = binomial)
+summary(mod_logit33)
+
+#### создание инструментальных переменных ####
+# подготовка данных
+data_instr <- read_excel("/Users/daryaovchinnikova/Desktop/Данные_инструмент.xlsx", sheet = "Sheet4")
+data_general <- data
+#переведем данные из широкого формата в длинный
+data_instr_long1 <- data_instr %>%
+  mutate(date = as.yearmon(TRADEDATE, format = "%m.%Y"), #переводим дату в определенный формат
+         year = format(date, "%Y"),
+         month = format(date, "%m"))%>%
+  pivot_longer(cols = -c(TRADEDATE, date, year, month, IMOEX, RF), #переводим данные в длинный формат, сворачиваем все компании в один столбец
+               names_to = "company",
+               values_to = "return")
+
+#оставим только те компании, которыее входят в выборку
+data_instr_long2 <- data_instr_long1 %>% filter(company %in% data_general$company)
+
+#переведем RF из годовой в месячную
+data_instr_long3 <- data_instr_long2 %>%
+  mutate(rf = (1 + RF/100)^(1/12)-1,
+         exess_return = return - rf,
+         market_exess = IMOEX - rf)
+
+#rolling CAPM
+get_capm_residuals <- function(df, window = 24, min_obs = 18){
+  df <- df %>% arrange(date) %>% mutate(idio_resid = NA)
+  n <- nrow(df)
+  
+  for (i in seq_len(n)){
+    if(i <= window) next
+    estimate_sample <- df[(i-window):(i-1), ] %>%
+      filter(is.finite(exess_return), is.finite(market_exess))
+    if(nrow(estimate_sample) < min_obs) next
+    mod <- lm(exess_return ~ market_exess, data = estimate_sample)
+    cur <- df[i, ] #берем текущую строку таблицы
+    if(is.finite(cur$exess_return) && is.finite(cur$market_exess)){ #вычисляется предсказанное значение
+      pred <- predict(mod, newdata = cur)
+      df$idio_resid[i] <- cur$exess_return - pred }} #записываем остаток в текущую строку
+  df}
+
+#посчитаем остатки по компаниям
+capm_result <- data_instr_long3 %>% group_by(company) %>%
+  group_modify(~get_capm_residuals(.x, window = 24, min_obs = 18)) %>%
+  ungroup()
+
+#посчитаем средние остатки для компании
+annual_idio <- capm_result %>% group_by(company, year) %>%
+  summarise(annual_idio = mean(idio_resid, na.rm = TRUE),
+            n_months = sum(!is.na(idio_resid)),
+            .groups = "drop") %>%
+  mutate(annual_idio = ifelse(n_months >= 6, annual_idio, NA_real_))
+
+#посчитаем стандартные ошибки остатков для компании
+annual_idio_sd <- capm_result %>% group_by(company, year) %>%
+  summarise(annual_idio_sd = sd(idio_resid, na.rm = TRUE),
+            n_months = sum(!is.na(idio_resid)),
+            .groups = "drop") %>%
+  mutate(annual_idio_sd = ifelse(n_months >= 6, annual_idio_sd, NA_real_))
+
+##средний шок по аналогам
+#отделим пары компания-отрасль, чтобы найти пиров для каждой из них
+firm_industry <- data_general %>% distinct(company, industry)
+
+#присоединяем к таблице с остатками компанию и отрасль
+annual_idio_ind <- annual_idio %>% left_join(firm_industry, by = "company") 
+annual_idio_ind_sd <- annual_idio_sd %>% left_join(firm_industry, by = "company") 
+#посчитаем средний шок по компаниям-аналогам
+peer_iv <- annual_idio_ind %>% group_by(industry, year) %>%
+  mutate(peer_capm_shock = ifelse(sum(!is.na(annual_idio))>1,
+                                  (sum(annual_idio, na.rm = TRUE)-annual_idio)/(sum(!is.na(annual_idio))-1), NA_real_)) %>% 
+  ungroup() %>% dplyr::select(company, year, peer_capm_shock)
+
+peer_iv_sd <- annual_idio_ind_sd %>% group_by(industry, year) %>%
+  mutate(peer_capm_risk = ifelse(sum(!is.na(annual_idio_sd))>1,
+                                 (sum(annual_idio_sd, na.rm = TRUE)-annual_idio_sd)/(sum(!is.na(annual_idio_sd))-1), NA_real_)) %>% 
+  ungroup() %>% dplyr::select(company, year, peer_capm_risk)
+#сдвинем инструмент на 1 год (добавим лаг)
+peer_iv_lag <- peer_iv %>% mutate(year = as.integer(year)+1) %>% 
+  dplyr::select(year, company, peer_capm_shock_lag1 = peer_capm_shock)
+
+peer_iv_sd_lag <- peer_iv_sd %>% mutate(year = as.integer(year)+1) %>% 
+  dplyr::select(year, company, peer_capm_risk_lag1 = peer_capm_risk)
+
+#объединим с основной панелью
+iv_data <- data_general %>% left_join(peer_iv_lag, by = c("company", "year"))%>% left_join(peer_iv_sd_lag, by = c("company", "year"))
+
+#### 2МНК модели ####
+#### abs ~ peer_abs (peer_shock + peer_risk) ####
+iv_sample4 <- iv_data %>% 
+  filter(complete.cases(abs, peer_abs, peer_capm_shock_lag1,
+                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
+                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
+                        company, year))
+
+# проверка числа наблюдений
+iv_sample4 %>% summarize(N = n(), firms = n_distinct(company), years = n_distinct(year))
+
+#посчитаем модель:
+mod_iv4 <- feols(
+  abs ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
+    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA+ peer_Leverage1|
+    company|
+    peer_abs ~ peer_capm_shock_lag1,
+  data = filter(iv_sample4, abs != 1)) 
+summary(mod_iv4)
+
+# первая стадия
+summary(mod_iv4, stage = 1)
+
+#### payout ~ peer_payout (peer_shock + peer_risk) ####
+iv_sample1.1 <- iv_data %>% 
+  filter(complete.cases(payout, peer_payout, peer_capm_shock_lag1, peer_capm_risk_lag1,
+                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
+                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
+                        company, year))
+# проверка числа наблюдений
+iv_sample1.1 %>% summarize(N = n(), firms = n_distinct(company), years = n_distinct(year))
+
+#посчитаем модель:
+mod_iv1.1 <- feols(
+  payout ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
+    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|
+    company|
+    peer_payout ~ peer_capm_shock_lag1 +peer_capm_risk_lag1,
+  data = iv_sample1.1)
+summary(mod_iv1.1)
+
+# первая стадия
+summary(mod_iv1.1, stage = 1)
+fitstat(mod_iv1.1, "wh")
+
+#### inc ~ peer_inc (peer_shock + peer_risk) - уточнить, норм инструменты или нет ####
+iv_sample2 <- iv_data %>% 
+  filter(complete.cases(inc, peer_inc, peer_capm_shock_lag1, peer_capm_risk_lag1,
+                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
+                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
+                        company, year))
+# проверка числа наблюдений
+iv_sample2 %>% summarize(N = n(), firms = n_distinct(company), years = n_distinct(year))
+
+
+#посчитаем модель:
+mod_ivlag2 <- feols(
+  inc ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
+    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|
+    company|
+    peer_inc ~ peer_capm_shock_lag1 + peer_capm_risk_lag1,
+  data = iv_sample2) 
+summary(mod_ivlag2)
+
+# первая стадия
+summary(mod_ivlag2, stage = 1)
+fitstat(mod_ivlag2, "wh")
+
+
+#### dec ~ peer_dec (peer_shock + peer_risk) ####
+iv_sample1.3 <- iv_data %>% 
+  filter(complete.cases(dec, peer_dec, peer_capm_shock_lag1, peer_capm_risk_lag1,
+                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
+                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
+                        company, year))
+#посчитаем модель:
+mod_ivlag3 <- feols(
+  dec ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
+    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|
+    company|
+    peer_dec ~ peer_capm_shock_lag1 + peer_capm_risk_lag1,
+  data = iv_sample1.3) 
+summary(mod_ivlag3)
+
+# первая стадия
+summary(mod_ivlag3, stage = 1)
+fitstat(mod_ivlag3, "wh")
+
+
+#### log(sum+1) ~ peer_payout (peer_shock + peer_risk) ####
+iv_sample5 <- iv_data %>% 
+  filter(complete.cases(sum, peer_payout, peer_capm_shock_lag1, peer_capm_risk_lag1,
+                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
+                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
+                        company, year))
+
+#посчитаем модель:
+mod_ivlag5 <- feols(
+  log(sum+1) ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
+    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|
+    company|
+    peer_payout ~ peer_capm_shock_lag1 + peer_capm_risk_lag1,
+  data = iv_sample5) 
+summary(mod_ivlag5)
+
+# первая стадия
+summary(mod_ivlag5, stage = 1)
+fitstat(mod_ivlag5, "wh")
