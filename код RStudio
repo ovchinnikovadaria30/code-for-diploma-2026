@@ -534,76 +534,58 @@ p3
 
 #### гетерогенные эффекты #### 
 #гетерогенное влияние leverage на payout
-mod_logit11 <- glm(payout ~ peer_payout*Leverage1 + 
-                     Tangibility +
-                     Sales_growth + Size + 
-                     REBE + ROA +company, 
-                   data = data, family = binomial)
+mod_logit11 <- glm(payout ~ peer_payout*Leverage1 + Tangibility + Sales_growth + Size + REBE + ROA +company, data = data, family = binomial)
 summary(mod_logit11)
 PseudoR2(mod_logit11)
+
 # REBE
-mod_logit12 <- feglm(payout ~ peer_payout*REBE + 
-                     Tangibility +
-                     Sales_growth + Size + 
-                     REBE + ROA + Leverage1 | year+company, 
-                   data = data, family = binomial)
+mod_logit12 <- feglm(payout ~ peer_payout*REBE + Tangibility + Sales_growth + Size + REBE + ROA + Leverage1 | year+company, data = data, family = binomial)
 summary(mod_logit12)
 
 #size
-mod_logit13 <- feglm(payout ~ peer_payout*Size + 
-                     Tangibility +
-                     Sales_growth + 
-                     REBE + ROA + Leverage1 | company + year, 
-                   data = data, family = binomial)
+mod_logit13 <- feglm(payout ~ peer_payout*Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company + year, data = data, family = binomial)
 summary(mod_logit13)
 
 #гетерогенное влияние leverage на inc
-mod_logit21 <- glm(inc ~ peer_inc*Leverage1 + 
-                     Tangibility +
-                     Sales_growth + Size + 
-                     REBE + ROA, 
-                   data = data, family = binomial)
+mod_logit21 <- glm(inc ~ peer_inc*Leverage1 + Tangibility + Sales_growth + Size + REBE + ROA, data = data, family = binomial)
 summary(mod_logit21)
 
 # REBE
-mod_logit22 <- feglm(inc ~ peer_inc*REBE + 
-                       Tangibility +
-                       Sales_growth + Size + 
-                       REBE + ROA + Leverage1 | year+company, 
-                     data = data, family = binomial)
+mod_logit22 <- feglm(inc ~ peer_inc*REBE + Tangibility + Sales_growth + Size + REBE + ROA + Leverage1 | year+company, data = data, family = binomial)
 summary(mod_logit22)
 
 #size
-mod_logit23 <- feglm(inc ~ peer_inc*Size + 
-                       Tangibility +
-                       Sales_growth + 
-                       REBE + ROA + Leverage1 | company + year, 
-                     data = data, family = binomial)
+mod_logit23 <- feglm(inc ~ peer_inc*Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company + year, data = data, family = binomial)
 summary(mod_logit23)
 
 #гетерогенное влияние leverage на dec
-mod_logit31 <- glm(dec ~ peer_dec*Leverage1 + 
-                     Tangibility +
-                     Sales_growth + Size + 
-                     REBE + ROA, 
-                   data = data, family = binomial)
+mod_logit31 <- glm(dec ~ peer_dec*Leverage1 + Tangibility + Sales_growth + Size + REBE + ROA, data = data, family = binomial)
 summary(mod_logit31)
 
 # REBE
-mod_logit32 <- glm(dec ~ peer_dec*REBE + 
-                       Tangibility +
-                       Sales_growth + Size + 
-                       REBE + ROA + Leverage1, 
-                     data = data, family = binomial)
+mod_logit32 <- glm(dec ~ peer_dec*REBE + Tangibility + Sales_growth + Size + REBE + ROA + Leverage1, data = data, family = binomial)
 summary(mod_logit32)
 
 #size
-mod_logit33 <- feglm(dec ~ peer_dec*Size + 
-                       Tangibility +
-                       Sales_growth + 
-                       REBE + ROA + Leverage1 | company + year, 
-                     data = data, family = binomial)
+mod_logit33 <- feglm(dec ~ peer_dec*Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company + year, data = data, family = binomial)
 summary(mod_logit33)
+
+#### гетерогенные эффекты по подвыборкам ####
+# размер 
+firm_size <- data %>% group_by(company) %>% summarise(mean_size = mean(Size, na.rm = TRUE), .groups = "drop")
+median_firm_size <- median(firm_size$mean_size, na.rm = TRUE)
+
+firm_size <- firm_size %>% mutate(size_group = ifelse(mean_size > median_firm_size, 1, 0))
+
+data_size <- data %>% left_join(firm_size %>% select(company, size_group), by = "company")
+
+data_small <- data_size %>% filter(size_group == 0)
+data_large <- data_size %>% filter(size_group == 1)
+
+mod_logit_small <- feglm(payout ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data_small, family = binomial)
+summary(mod_logit_small)
+mod_logit_large <- feglm(payout ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data_large, family = binomial)
+summary(mod_logit_large)
 
 #### создание инструментальных переменных ####
 # подготовка данных
