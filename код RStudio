@@ -63,6 +63,7 @@ library(ggridges)
 library(gghighlight)
 library(pROC)
 library(ggradar)
+library(lmtest)
 
 #### Панельные данные ####
 #загрузим данные
