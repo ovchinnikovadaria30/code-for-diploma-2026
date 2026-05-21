@@ -31,7 +31,9 @@ install.packages("lmtest")
 install.packages("flextable")
 install.packages("officer")
 install.packages("pROC")
+install.packages("sandwich")
 
+library(sandwich)
 library(caret)
 library(ggplot2)
 library(mlbench)
@@ -116,6 +118,8 @@ data <- add_peer_mean(data, Sales_growth)
 data <- add_peer_mean(data, REBE)
 data <- add_peer_mean(data, ROA)
 data <- add_peer_mean(data, Leverage1)
+
+data <- data %>% mutate(after_2021 = ifelse(year > 2021, 1, 0))
 
 #### переведем в панельные данные ####
 #переведем в формат plm (укажем индекс объекта и времени)
@@ -344,9 +348,9 @@ powerTransform(mod_boxcox)
 
 #сумма от средней суммы по пирам - норм в приложения
 mod1 <- plm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
-            data = data1, model = "within"#, effect = "twoways"
-)
+            data = data1)
 summary(mod1)
+
 mod10 <- lm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + 
               Sales_growth + REBE + ROA + Leverage1 + company,
             data = data1)
@@ -360,6 +364,7 @@ mod20 <- lm(log(sum+1) ~ peer_payout + Size + Tangibility +
               Sales_growth + REBE + ROA + Leverage1 + company,
             data = data1)
 summary(mod20)
+bptest(mod20)
 
 #изменение от доли плативших
 mod3 <- plm(abs ~  peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
@@ -377,7 +382,7 @@ summary(mod5)
 mod50 <- lm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company,
            data = filter(data1, abs != 1, abs < 3, abs != -1))
 summary(mod50)
-
+bptest(mod50)
 #выгрузка моделей
 library(stargazer)
 cse <- function(model) {A <- sqrt(diag(vcovHC(model,type = "HC0")))
@@ -391,13 +396,11 @@ stargazer(mod1, type = "html", out = "mods11_plm.html")
 #логит платит/нет от доли плативших
 mod_logit1 <- feglm(payout ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data, family = binomial)
 summary(mod_logit1)
-
+summary(mod_logit1, vcov = ~ company)
 #предельные эффекты для серднего по выборке индивида
 maBina(mod_logit1)
 avg_slopes(mod_logit1, variables = "peer_payout")
-avg_slopes(mod_logit1,
-           variables = "peer_payout",
-           vcov = FALSE)
+avg_slopes(mod_logit1, variables = "peer_payout", vcov = FALSE)
 
 #логит увеличивает/нет от доли увеличивших
 mod_logit2 <- glm(inc ~ peer_inc + 
@@ -415,6 +418,20 @@ mod_logit3 <- glm(dec ~ peer_dec +
 summary(mod_logit3)
 PseudoR2(mod_logit3)
 
+
+#### модели с бинарной года ####
+#логит платит/нет от доли плативших
+mod_logit15 <- feglm(payout ~ peer_payout*after_2021 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data, family = binomial)
+summary(mod_logit15)
+
+mod25 <- plm(log(sum+1) ~ peer_payout*after_2021 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
+            data = data1, model = "within", effect = "individual")
+summary(mod25)
+
+mod55 <- plm(abs ~ peer_abs*after_2021 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + after_2021,
+            data = filter(data1, abs != 1, abs < 3, abs != -1), model = "within")
+summary(mod55)
+
 #### модель с лагами ####
 data_lag <- data %>%
   arrange(company, year) %>%
@@ -423,14 +440,9 @@ data_lag <- data %>%
   mutate(peer_abs_lag1 = lag(peer_abs, 1)) %>%
   ungroup()
 
-mod_logit_lag1 <- feglm(
-  payout ~ peer_payout_lag1 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company,
-  data = data_lag,
-  family = binomial)
+mod_logit_lag1 <- feglm(payout ~ peer_payout_lag1 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data_lag, family = binomial)
 summary(mod_logit_lag1)
-lm_lag1 <- lm(
-  payout ~ peer_payout_lag1 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1+ company,
-  data = data_lag)
+lm_lag1 <- lm(payout ~ peer_payout_lag1 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company, data = data_lag)
 summary(lm_lag1)
 
 #### тест на сравнение моделейс fe и без ####
@@ -548,7 +560,7 @@ mod_logit13 <- feglm(payout ~ peer_payout*Size + Tangibility + Sales_growth + RE
 summary(mod_logit13)
 
 #гетерогенное влияние leverage на inc
-mod_logit21 <- glm(inc ~ peer_inc*Leverage1 + Tangibility + Sales_growth + Size + REBE + ROA, data = data, family = binomial)
+mod_logit21 <- glm(inc ~ peer_inc*Leverage1 + Tangibility +Sales_growth + Size + REBE + ROA, data = data, family = binomial)
 summary(mod_logit21)
 
 # REBE
@@ -556,11 +568,11 @@ mod_logit22 <- feglm(inc ~ peer_inc*REBE + Tangibility + Sales_growth + Size + R
 summary(mod_logit22)
 
 #size
-mod_logit23 <- feglm(inc ~ peer_inc*Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company + year, data = data, family = binomial)
+mod_logit23 <- feglm(inc ~ peer_inc*Size + Tangibility +Sales_growth + REBE + ROA + Leverage1 | company + year, data = data, family = binomial)
 summary(mod_logit23)
 
 #гетерогенное влияние leverage на dec
-mod_logit31 <- glm(dec ~ peer_dec*Leverage1 + Tangibility + Sales_growth + Size + REBE + ROA, data = data, family = binomial)
+mod_logit31 <- glm(dec ~ peer_dec*Leverage1 + Tangibility +Sales_growth + Size + REBE + ROA, data = data, family = binomial)
 summary(mod_logit31)
 
 # REBE
@@ -587,6 +599,21 @@ mod_logit_small <- feglm(payout ~ peer_payout + Size + Tangibility + Sales_growt
 summary(mod_logit_small)
 mod_logit_large <- feglm(payout ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data_large, family = binomial)
 summary(mod_logit_large)
+
+#REBE
+firm_rebe <- data %>% group_by(company) %>% summarise(mean_REBE = mean(REBE, na.rm = TRUE), .groups = "drop")
+median_firm_rebe <- median(firm_rebe$mean_REBE, na.rm = TRUE)
+
+firm_rebe <- firm_rebe %>% mutate(rebe_group = ifelse(mean_REBE > median_firm_rebe, 1, 0))
+data_rebe <- data %>% left_join(firm_rebe %>% select(company, rebe_group), by = "company")
+
+data_low_rebe <- data_rebe %>% filter(rebe_group == 0)
+data_high_rebe <- data_rebe %>% filter(rebe_group == 1)
+
+mod_logit_low_rebe <- feglm(payout ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data_low_rebe, family = binomial)
+summary(mod_logit_low_rebe)
+mod_logit_high_rebe <- feglm(payout ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data_high_rebe, family = binomial)
+summary(mod_logit_high_rebe)
 
 #### создание инструментальных переменных ####
 # подготовка данных
@@ -674,7 +701,7 @@ peer_iv_sd_lag <- peer_iv_sd %>% mutate(year = as.integer(year)+1) %>%
 iv_data <- data_general %>% left_join(peer_iv_lag, by = c("company", "year"))%>% left_join(peer_iv_sd_lag, by = c("company", "year"))
 
 #### 2МНК модели ####
-#### abs ~ peer_abs (peer_shock + peer_risk) ####
+#### abs ~ peer_abs (peer_shock) ####
 iv_sample4 <- iv_data %>% 
   filter(complete.cases(abs, peer_abs, peer_capm_shock_lag1,
                         Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
@@ -696,7 +723,7 @@ summary(mod_iv4)
 # первая стадия
 summary(mod_iv4, stage = 1)
 
-#### payout ~ peer_payout (peer_shock + peer_risk) ####
+#### payout ~ peer_payout (peer_shock) ####
 iv_sample1.1 <- iv_data %>% 
   filter(complete.cases(payout, peer_payout, peer_capm_shock_lag1, peer_capm_risk_lag1,
                         Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
@@ -718,7 +745,7 @@ summary(mod_iv1.1)
 summary(mod_iv1.1, stage = 1)
 fitstat(mod_iv1.1, "wh")
 
-#### inc ~ peer_inc (peer_shock + peer_risk) - уточнить, норм инструменты или нет ####
+#### inc ~ peer_inc (peer_shock) ####
 iv_sample2 <- iv_data %>% 
   filter(complete.cases(inc, peer_inc, peer_capm_shock_lag1, peer_capm_risk_lag1,
                         Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
@@ -742,7 +769,7 @@ summary(mod_ivlag2, stage = 1)
 fitstat(mod_ivlag2, "wh")
 
 
-#### dec ~ peer_dec (peer_shock + peer_risk) ####
+#### dec ~ peer_dec (peer_shock) ####
 iv_sample1.3 <- iv_data %>% 
   filter(complete.cases(dec, peer_dec, peer_capm_shock_lag1, peer_capm_risk_lag1,
                         Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
@@ -762,7 +789,7 @@ summary(mod_ivlag3, stage = 1)
 fitstat(mod_ivlag3, "wh")
 
 
-#### log(sum+1) ~ peer_payout (peer_shock + peer_risk) ####
+#### log(sum+1) ~ peer_payout (peer_shock) ####
 iv_sample5 <- iv_data %>% 
   filter(complete.cases(sum, peer_payout, peer_capm_shock_lag1, peer_capm_risk_lag1,
                         Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
