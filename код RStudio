@@ -346,7 +346,7 @@ powerTransform(mod_boxcox)
 
 #### модели plm ####
 
-#сумма от средней суммы по пирам - норм в приложения
+#сумма от средней суммы по пирам
 mod1 <- plm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
             data = data1)
 summary(mod1)
@@ -356,7 +356,7 @@ mod10 <- lm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility +
             data = data1)
 summary(mod10)
 
-#сумма от доли плативших - хорошая
+#сумма от доли плативших
 mod2 <- plm(log(sum+1) ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
             data = data1, model = "within", effect = "individual")
 summary(mod2)
@@ -374,7 +374,7 @@ mod30 <- lm(abs ~  peer_payout + Size + Tangibility + Sales_growth + REBE + ROA 
             data = data1)
 summary(mod30)
 
-#изменение от изменения - норм
+#изменение от изменения
 mod5 <- plm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
             data = filter(data1, abs != 1, abs < 3, abs != -1), model = "within")
 summary(mod5)
@@ -383,6 +383,7 @@ mod50 <- lm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Le
            data = filter(data1, abs != 1, abs < 3, abs != -1))
 summary(mod50)
 bptest(mod50)
+
 #выгрузка моделей
 library(stargazer)
 cse <- function(model) {A <- sqrt(diag(vcovHC(model,type = "HC0")))
@@ -495,10 +496,9 @@ conf_mat <- confusionMatrix(
   data = logit_sample1$pred_class,
   reference = logit_sample1$payout_f)
 
-# Посмотреть таблицу
 conf_mat$table
 
-# График
+# график
 c1 <- as.data.frame(conf_mat$table)
 colnames(c1) <- c("Prediction", "Target", "N")
 p2 <- cvms::plot_confusion_matrix(c1,
@@ -522,7 +522,6 @@ roc_obj <- roc(response = logit_sample1$payout, predictor = logit_sample1$prob_h
 auc_val <- as.numeric(auc(roc_obj))
 # Данные для ggplot
 roc_df <- data.frame(fpr = 1 - roc_obj$specificities, tpr = roc_obj$sensitivities)
-# Красивый график
 roc_df_plot <- roc_df %>%
   dplyr::arrange(fpr, tpr)
 p3 <- ggplot(roc_df_plot, aes(x = fpr, y = tpr)) +
@@ -679,132 +678,62 @@ firm_industry <- data_general %>% distinct(company, industry)
 
 #присоединяем к таблице с остатками компанию и отрасль
 annual_idio_ind <- annual_idio %>% left_join(firm_industry, by = "company") 
-annual_idio_ind_sd <- annual_idio_sd %>% left_join(firm_industry, by = "company") 
 #посчитаем средний шок по компаниям-аналогам
 peer_iv <- annual_idio_ind %>% group_by(industry, year) %>%
   mutate(peer_capm_shock = ifelse(sum(!is.na(annual_idio))>1,
                                   (sum(annual_idio, na.rm = TRUE)-annual_idio)/(sum(!is.na(annual_idio))-1), NA_real_)) %>% 
   ungroup() %>% dplyr::select(company, year, peer_capm_shock)
 
-peer_iv_sd <- annual_idio_ind_sd %>% group_by(industry, year) %>%
-  mutate(peer_capm_risk = ifelse(sum(!is.na(annual_idio_sd))>1,
-                                 (sum(annual_idio_sd, na.rm = TRUE)-annual_idio_sd)/(sum(!is.na(annual_idio_sd))-1), NA_real_)) %>% 
-  ungroup() %>% dplyr::select(company, year, peer_capm_risk)
 #сдвинем инструмент на 1 год (добавим лаг)
 peer_iv_lag <- peer_iv %>% mutate(year = as.integer(year)+1) %>% 
   dplyr::select(year, company, peer_capm_shock_lag1 = peer_capm_shock)
 
-peer_iv_sd_lag <- peer_iv_sd %>% mutate(year = as.integer(year)+1) %>% 
-  dplyr::select(year, company, peer_capm_risk_lag1 = peer_capm_risk)
-
 #объединим с основной панелью
-iv_data <- data_general %>% left_join(peer_iv_lag, by = c("company", "year"))%>% left_join(peer_iv_sd_lag, by = c("company", "year"))
+iv_data <- data_general %>% left_join(peer_iv_lag, by = c("company", "year"))
 
 #### 2МНК модели ####
 #### abs ~ peer_abs (peer_shock) ####
-iv_sample4 <- iv_data %>% 
-  filter(complete.cases(abs, peer_abs, peer_capm_shock_lag1,
-                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
-                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
-                        company, year))
+iv_sample4 <- iv_data %>% filter(complete.cases(abs, peer_abs, peer_capm_shock_lag1,Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1, company, year))
 
-# проверка числа наблюдений
-iv_sample4 %>% summarize(N = n(), firms = n_distinct(company), years = n_distinct(year))
-
-#посчитаем модель:
-mod_iv4 <- feols(
-  abs ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
-    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA+ peer_Leverage1|
-    company|
-    peer_abs ~ peer_capm_shock_lag1,
-  data = filter(iv_sample4, abs != 1)) 
+#модель:
+mod_iv4 <- feols(abs ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA+ peer_Leverage1|company|peer_abs ~ peer_capm_shock_lag1, data = filter(iv_sample4, abs != 1)) 
 summary(mod_iv4)
-
 # первая стадия
 summary(mod_iv4, stage = 1)
 
 #### payout ~ peer_payout (peer_shock) ####
-iv_sample1.1 <- iv_data %>% 
-  filter(complete.cases(payout, peer_payout, peer_capm_shock_lag1, peer_capm_risk_lag1,
-                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
-                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
-                        company, year))
-# проверка числа наблюдений
-iv_sample1.1 %>% summarize(N = n(), firms = n_distinct(company), years = n_distinct(year))
+iv_sample1.1 <- iv_data %>% filter(complete.cases(payout, peer_payout, peer_capm_shock_lag1,Size, Tangibility, Sales_growth, REBE, ROA, Leverage1, peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1, company, year))
 
-#посчитаем модель:
-mod_iv1.1 <- feols(
-  payout ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
-    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|
-    company|
-    peer_payout ~ peer_capm_shock_lag1 +peer_capm_risk_lag1,
-  data = iv_sample1.1)
+#модель:
+mod_iv1.1 <- feols(payout ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|company|peer_payout ~ peer_capm_shock_lag1, data = iv_sample1.1)
 summary(mod_iv1.1)
-
 # первая стадия
 summary(mod_iv1.1, stage = 1)
-fitstat(mod_iv1.1, "wh")
+
 
 #### inc ~ peer_inc (peer_shock) ####
-iv_sample2 <- iv_data %>% 
-  filter(complete.cases(inc, peer_inc, peer_capm_shock_lag1, peer_capm_risk_lag1,
-                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
-                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
-                        company, year))
-# проверка числа наблюдений
-iv_sample2 %>% summarize(N = n(), firms = n_distinct(company), years = n_distinct(year))
+iv_sample2 <- iv_data %>% filter(complete.cases(inc, peer_inc, peer_capm_shock_lag1,Size, Tangibility, Sales_growth, REBE, ROA, Leverage1, peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1, company, year))
 
-
-#посчитаем модель:
-mod_ivlag2 <- feols(
-  inc ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
-    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|
-    company|
-    peer_inc ~ peer_capm_shock_lag1 + peer_capm_risk_lag1,
-  data = iv_sample2) 
+#модель:
+mod_ivlag2 <- feols(inc ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|company|peer_inc ~ peer_capm_shock_lag1,data = iv_sample2) 
 summary(mod_ivlag2)
-
 # первая стадия
 summary(mod_ivlag2, stage = 1)
-fitstat(mod_ivlag2, "wh")
-
 
 #### dec ~ peer_dec (peer_shock) ####
-iv_sample1.3 <- iv_data %>% 
-  filter(complete.cases(dec, peer_dec, peer_capm_shock_lag1, peer_capm_risk_lag1,
-                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
-                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
-                        company, year))
-#посчитаем модель:
-mod_ivlag3 <- feols(
-  dec ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
-    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|
-    company|
-    peer_dec ~ peer_capm_shock_lag1 + peer_capm_risk_lag1,
-  data = iv_sample1.3) 
-summary(mod_ivlag3)
+iv_sample1.3 <- iv_data %>% filter(complete.cases(dec, peer_dec, peer_capm_shock_lag1,Size, Tangibility, Sales_growth, REBE, ROA, Leverage1, peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,company, year))
 
+#модель:
+mod_ivlag3 <- feols(dec ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|company|peer_dec ~ peer_capm_shock_lag1,data = iv_sample1.3) 
+summary(mod_ivlag3)
 # первая стадия
 summary(mod_ivlag3, stage = 1)
-fitstat(mod_ivlag3, "wh")
-
 
 #### log(sum+1) ~ peer_payout (peer_shock) ####
-iv_sample5 <- iv_data %>% 
-  filter(complete.cases(sum, peer_payout, peer_capm_shock_lag1, peer_capm_risk_lag1,
-                        Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,
-                        peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,
-                        company, year))
+iv_sample5 <- iv_data %>% filter(complete.cases(sum, peer_payout, peer_capm_shock_lag1, peer_capm_risk_lag1,Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,peer_Size, peer_Tangibility, peer_Sales_growth, peer_REBE, peer_ROA, peer_Leverage1,company, year))
 
-#посчитаем модель:
-mod_ivlag5 <- feols(
-  log(sum+1) ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +
-    peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|
-    company|
-    peer_payout ~ peer_capm_shock_lag1 + peer_capm_risk_lag1,
-  data = iv_sample5) 
+#модель:
+mod_ivlag5 <- feols(log(sum+1) ~ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 +peer_Size+ peer_Tangibility+ peer_Sales_growth+ peer_REBE+ peer_ROA + peer_Leverage1|company|peer_payout ~ peer_capm_shock_lag1 + peer_capm_risk_lag1,data = iv_sample5) 
 summary(mod_ivlag5)
-
 # первая стадия
 summary(mod_ivlag5, stage = 1)
-fitstat(mod_ivlag5, "wh")
