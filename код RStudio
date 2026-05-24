@@ -143,10 +143,7 @@ data_summary <- data_plot[ , sapply(data_plot,is.numeric)]
 stargazer(data_summary, type = "html", out = "descr_stats.html")
 
 #### графики ####
-data_plot$industry <- factor(
-  data_plot$industry,
-  levels = c(1, 2, 3, 4, 5, 7, 8),
-  labels = c("нефтегаз", "электроэнергетика", "металлы и добыча", "потребительский сектор", "ИТ", "транспорт", "недвижимость"))
+data_plot$industry <- factor(data_plot$industry, levels = c(1, 2, 3, 4, 5, 7, 8), labels = c("нефтегаз", "электроэнергетика", "металлы и добыча", "потребительский сектор", "ИТ", "транспорт", "недвижимость"))
 
 #### теста Геймса-Ховелла ####
 p <- ggbetweenstats(
@@ -169,7 +166,6 @@ p
 ggsave("plot01.svg", plot = p, width = 20, height = 10, dpi = 400)
 
 #### график плотность распределения ####
-
 p4 <-ggplot(data = data_plot, aes(x = peer_payout, fill = as.character(industry))) +
   geom_density(color = "black", alpha = 0.9) +
   facet_wrap(~ as.character(industry)) +
@@ -187,7 +183,6 @@ p4
 ggsave("plot4.svg", plot = p4, width = 20, height = 10, limitsize = FALSE)
 
 #### круговая диаграмма ####
-
 chord_data1 <- as.data.frame(data) %>%
   filter(complete.cases(across(all_of(vars_mod2)))) %>%
   mutate(industry = factor(
@@ -261,12 +256,7 @@ for (ind in unique(data_corr$industry)) {df_ind <- data_corr %>%
   p_ind <- ggcorrmat(data = df_ind, type = "parametric", colors = c("blue", "white", "darkgreen"), matrix.type = "upper", title = ind,
                      results.subtitle = FALSE, subtitle = NULL, caption = NULL, ggtheme = ggplot2::theme_minimal(base_size = 12)) +
     theme(plot.title = element_text(size = 16, face = "bold"), axis.text.x = element_text(size = 9, angle = 45, hjust = 1), axis.text.y = element_text(size = 9))
-  ggsave(
-    filename = paste0("~/Desktop/corr_", ind, ".svg"),
-    plot = p_ind,
-    width = 10,
-    height = 9,
-    device = svglite::svglite)}
+  ggsave(filename = paste0("~/Desktop/corr_", ind, ".svg"), plot = p_ind, width = 10, height = 9, device = svglite::svglite)}
 
 #### корреляционная матрица - по всем отраслям сразу ####
 df_all <- data_corr %>% select(-industry)
@@ -335,8 +325,7 @@ p_ridge_positive <- data_plot %>%
 p_ridge_positive
 
 #### тест бокса-кокса ####
-mod_boxcox <- lm(I(sum+1) ~ peer_payout + Size + Tangibility +  Sales_growth + REBE + ROA + Leverage1, 
-                 data = data)
+mod_boxcox <- lm(I(sum+1) ~ peer_payout + Size + Tangibility +  Sales_growth + REBE + ROA + Leverage1, data = data)
 #нужно ли логарифмировать зависимую переменную? 
 #тест Бокса - Кокса 
 par(mfrow = c(1,1))
@@ -347,40 +336,30 @@ powerTransform(mod_boxcox)
 #### модели plm ####
 
 #сумма от средней суммы по пирам
-mod1 <- plm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
-            data = data1)
+mod1 <- plm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = data1)
 summary(mod1)
 
-mod10 <- lm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + 
-              Sales_growth + REBE + ROA + Leverage1 + company,
-            data = data1)
+mod10 <- lm(log(sum+1) ~ log(peer_sum+1) + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company, data = data1)
 summary(mod10)
 
 #сумма от доли плативших
-mod2 <- plm(log(sum+1) ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
-            data = data1, model = "within", effect = "individual")
+mod2 <- plm(log(sum+1) ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = data1, model = "within", effect = "individual")
 summary(mod2)
-mod20 <- lm(log(sum+1) ~ peer_payout + Size + Tangibility + 
-              Sales_growth + REBE + ROA + Leverage1 + company,
-            data = data1)
+mod20 <- lm(log(sum+1) ~ peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company, data = data1)
 summary(mod20)
 bptest(mod20)
 
 #изменение от доли плативших
-mod3 <- plm(abs ~  peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
-            data = data1, model = "within")
+mod3 <- plm(abs ~  peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = data1, model = "within")
 summary(mod3)
-mod30 <- lm(abs ~  peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company,
-            data = data1)
+mod30 <- lm(abs ~  peer_payout + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company, data = data1)
 summary(mod30)
 
 #изменение от изменения
-mod5 <- plm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
-            data = filter(data1, abs != 1, abs < 3, abs != -1), model = "within")
+mod5 <- plm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = filter(data1, abs != 1, abs < 3, abs != -1), model = "within")
 summary(mod5)
 
-mod50 <- lm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company,
-           data = filter(data1, abs != 1, abs < 3, abs != -1))
+mod50 <- lm(abs ~ peer_abs + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + company, data = filter(data1, abs != 1, abs < 3, abs != -1))
 summary(mod50)
 bptest(mod50)
 
@@ -389,8 +368,7 @@ library(stargazer)
 cse <- function(model) {A <- sqrt(diag(vcovHC(model,type = "HC0")))
   return(A)}
 stargazer(mod2, mod5, type = "html", out = "mods1_plm.html")
-stargazer(mod2, mod5, type = "html", out = "mods1_plm_se.html", se = list(cse(mod3), cse(mod2), cse(mod5)))
-
+stargazer(mod2, mod5, type = "html", out = "mods1_plm_se.html", se = list(cse(mod2), cse(mod5)))
 stargazer(mod1, type = "html", out = "mods11_plm.html")
 
 ##### модели_logit ####
@@ -404,33 +382,24 @@ avg_slopes(mod_logit1, variables = "peer_payout")
 avg_slopes(mod_logit1, variables = "peer_payout", vcov = FALSE)
 
 #логит увеличивает/нет от доли увеличивших
-mod_logit2 <- glm(inc ~ peer_inc + 
-                    Size + Tangibility + Sales_growth + REBE +
-                    ROA + Leverage1, data = data,
-                  family = binomial)
+mod_logit2 <- glm(inc ~ peer_inc + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = data, family = binomial)
 summary(mod_logit2)
 PseudoR2(mod_logit2)
 
 #логит уменьшает/нет от доли уменьшивших
-mod_logit3 <- glm(dec ~ peer_dec + 
-                    Size + Tangibility + Sales_growth + REBE +
-                    ROA + Leverage1, data = data,
-                  family = binomial)
+mod_logit3 <- glm(dec ~ peer_dec + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = data, family = binomial)
 summary(mod_logit3)
 PseudoR2(mod_logit3)
-
 
 #### модели с бинарной года ####
 #логит платит/нет от доли плативших
 mod_logit15 <- feglm(payout ~ peer_payout*after_2021 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data, family = binomial)
 summary(mod_logit15)
 
-mod25 <- plm(log(sum+1) ~ peer_payout*after_2021 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1,
-            data = data1, model = "within", effect = "individual")
+mod25 <- plm(log(sum+1) ~ peer_payout*after_2021 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = data1, model = "within", effect = "individual")
 summary(mod25)
 
-mod55 <- plm(abs ~ peer_abs*after_2021 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + after_2021,
-            data = filter(data1, abs != 1, abs < 3, abs != -1), model = "within")
+mod55 <- plm(abs ~ peer_abs*after_2021 + Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 + after_2021, data = filter(data1, abs != 1, abs < 3, abs != -1), model = "within")
 summary(mod55)
 
 #### модель с лагами ####
@@ -453,15 +422,9 @@ data_lr <- data %>%
   group_by(company) %>%
   filter(n_distinct(inc) > 1) %>%
   ungroup()
-mod_logit20 <- feglm(inc ~ peer_inc + peer_dec+ 
-                      Size + Tangibility + Sales_growth + REBE +
-                      ROA + Leverage1, data = data_lr,
-                    family = binomial)
+mod_logit20 <- feglm(inc ~ peer_inc + peer_dec+ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1, data = data_lr, family = binomial)
 summary(mod_logit20) # модель без фиксированных эффектов
-mod_logit30 <- feglm(inc ~ peer_inc + peer_dec+
-                      Size + Tangibility + Sales_growth + REBE +
-                      ROA + Leverage1 | company, data = data_lr,
-                    family = binomial)
+mod_logit30 <- feglm(inc ~ peer_inc + peer_dec+ Size + Tangibility + Sales_growth + REBE + ROA + Leverage1 | company, data = data_lr, family = binomial)
 summary(mod_logit30) # модель с фиксированными эффектами
 nobs(mod_logit20)
 nobs(mod_logit30)
@@ -471,14 +434,13 @@ lrtest(mod_logit20, mod_logit30) # - FE не нужны
 #mod_logit1
 ##построим для этой модели confusion matrix
 
-logit_sample1 <- data %>%filter(complete.cases(payout, peer_payout, Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,company, year))
-logit_sample1$prob_hat <- predict(mod_logit1, newdata = logit_sample1, type = "response")
+logit_sample1 <- data %>%filter(complete.cases(payout, peer_payout, Size, Tangibility, Sales_growth, REBE, ROA, Leverage1,company, year)) 
+logit_sample1$prob_hat <- predict(mod_logit1, newdata = logit_sample1, type = "response") #предсказанные вероятности выплаты
 logit_sample1$pred_class <- factor(ifelse(logit_sample1$prob_hat >= 0.5, 1, 0), levels = c(0, 1))
 logit_sample1$payout_f <- factor(logit_sample1$payout, levels = c(0, 1))
 table(Predicted = logit_sample1$pred_class, Actual = logit_sample1$payout_f)
 confusionMatrix(logit_sample1$pred_class, logit_sample1$payout_f)
 table(data1 %>% na.omit() %>% dplyr::select(payout))
-316/(316+171)
 
 #посчитаем метрики precision и recall
 cm <- confusionMatrix(logit_sample1$pred_class, logit_sample1$payout_f)
@@ -492,19 +454,14 @@ precision_1
 recall_1
 
 # Confusion matrix
-conf_mat <- confusionMatrix(
-  data = logit_sample1$pred_class,
-  reference = logit_sample1$payout_f)
-
-conf_mat$table
+conf_mat <- confusionMatrix(data = logit_sample1$pred_class, reference = logit_sample1$payout_f)
+conf_mat$table # матрица сопряженности
 
 # график
 c1 <- as.data.frame(conf_mat$table)
 colnames(c1) <- c("Prediction", "Target", "N")
-p2 <- cvms::plot_confusion_matrix(c1,
-                                  add_counts = TRUE,
-                                  palette = "Blues",
-                                  add_normalized = FALSE)
+p2 <- cvms::plot_confusion_matrix(c1, add_counts = TRUE, palette = "Blues",add_normalized = FALSE)
+
 for (i in seq_along(p2$layers)) {
   if (inherits(p2$layers[[i]]$geom, "GeomText")) {
     p2$layers[[i]]$aes_params$size <- 4}}
@@ -626,8 +583,6 @@ data_instr_long1 <- data_instr %>%
   pivot_longer(cols = -c(TRADEDATE, date, year, month, IMOEX, RF), #переводим данные в длинный формат, сворачиваем все компании в один столбец
                names_to = "company",
                values_to = "return")
-
-#оставим только те компании, которыее входят в выборку
 data_instr_long2 <- data_instr_long1 %>% filter(company %in% data_general$company)
 
 #переведем RF из годовой в месячную
@@ -639,7 +594,7 @@ data_instr_long3 <- data_instr_long2 %>%
 #rolling CAPM
 get_capm_residuals <- function(df, window = 24, min_obs = 18){
   df <- df %>% arrange(date) %>% mutate(idio_resid = NA)
-  n <- nrow(df)
+  n <- nrow(df) #считается количество строк в данных по компании
   
   for (i in seq_len(n)){
     if(i <= window) next
